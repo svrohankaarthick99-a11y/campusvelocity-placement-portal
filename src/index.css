@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+@theme {
+  --font-headline-sm: "Space Grotesk", sans-serif;
+  --font-headline-md: "Space Grotesk", sans-serif;
+  --font-headline-lg: "Space Grotesk", sans-serif;
+  --font-display-hero: "Space Grotesk", sans-serif;
+  --font-body-base: "Geist", sans-serif;
+  --font-body-sm: "Geist", sans-serif;
+  --font-label-compact: "Geist", sans-serif;
+  --font-label-prominent: "Geist", sans-serif;
+  --font-code-tabular: "Geist", monospace;
+
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e5eeff;
+  --color-surface-container-high: #dce9ff;
+  --color-surface-container-highest: #d3e4fe;
+  --color-surface: #f8f9ff;
+  --color-surface-dim: #cbdbf5;
+  --color-surface-bright: #f8f9ff;
+  --color-background: #f8f9ff;
+  --color-on-surface: #0b1c30;
+  --color-on-surface-variant: #45464d;
+  --color-outline: #76777d;
+  --color-outline-variant: #c6c6cd;
+  --color-secondary: #1d4ed8;
+  --color-secondary-container: #4069f2;
+  --color-secondary-fixed: #dce1ff;
+  --color-secondary-fixed-dim: #b7c4ff;
+  --color-on-secondary-fixed: #001551;
+  --color-on-secondary: #ffffff;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-on-error: #ffffff;
+}
+
+:root {
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2.5rem;
+  --gutter: 1.5rem;
+}
+
+body {
+  font-family: var(--font-body-base);
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+}
+
+.font-code-tabular,
+.font-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Material symbol styling */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}

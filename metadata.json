@@ -1,0 +1,6 @@
+{
+  "name": "CampusVelocity - Campus Placement & Internship Portal",
+  "description": "Production campus placement and internship management system with multi-role workflows for students, company recruiters, and placement cell administrators.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
