@@ -123,25 +123,50 @@ export const StudentProfile: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col w-full max-w-[1536px] mx-auto px-6 py-6 gap-6">
-      <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/50 flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-secondary text-2xl">person</span>
-          <h1 className="font-headline-lg text-2xl font-bold text-on-surface">
-            Academic Profile &amp; Placement Credentials
-          </h1>
+    <div className="flex flex-col w-full max-w-[1536px] mx-auto px-4 sm:px-6 py-6 gap-6">
+      <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-secondary-fixed text-secondary flex items-center justify-center">
+              <span className="material-symbols-outlined text-2xl">badge</span>
+            </div>
+            <div>
+              <h1 className="font-headline-lg text-2xl font-bold text-on-surface">
+                Single Master Placement Profile
+              </h1>
+              <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                Official institutional student credentials • 1-to-1 mapped to your university roll number
+              </p>
+            </div>
+          </div>
         </div>
-        <p className="font-body-sm text-xs text-on-surface-variant">
-          Your verified credentials directly govern company drive eligibility and dream-tier gating.
-        </p>
+
+        <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 self-start md:self-auto">
+          <span className="material-symbols-outlined text-base">verified</span>
+          <span>Single University Profile Active</span>
+        </div>
+      </div>
+
+      {/* Info notice about single profile enforcement */}
+      <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex items-start gap-3 text-xs leading-relaxed text-on-surface-variant">
+        <span className="material-symbols-outlined text-secondary text-lg shrink-0 mt-0.5">info</span>
+        <span>
+          <strong>Single Candidate Profile Policy:</strong> In accordance with university placement rules, every student maintains exactly <strong>one authoritative master profile</strong>. When applying to various jobs across different recruiters and partner companies, recruiters review and evaluate this single profile.
+        </span>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Form: Academic & Personal Info */}
-        <div className="lg:col-span-8 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/50 flex flex-col gap-4">
-          <h2 className="font-headline-sm text-sm font-bold text-on-surface border-b border-outline-variant/30 pb-2">
-            1. Institutional Academic Record
-          </h2>
+        <div className="lg:col-span-8 bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col gap-5">
+          <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3">
+            <h2 className="font-headline-sm text-sm font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-base">school</span>
+              <span>1. Institutional Academic Record</span>
+            </h2>
+            <span className="text-[11px] text-on-surface-variant font-code-tabular">
+              Required for eligibility checks
+            </span>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
@@ -154,7 +179,7 @@ export const StudentProfile: React.FC = () => {
                 value={formData.name}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-secondary transition-all"
               />
             </div>
 
@@ -168,7 +193,7 @@ export const StudentProfile: React.FC = () => {
                 value={formData.registrationNumber}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-code-tabular focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-code-tabular font-bold focus:outline-none focus:border-secondary transition-all"
               />
             </div>
 
@@ -181,7 +206,7 @@ export const StudentProfile: React.FC = () => {
                 value={formData.branch}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-semibold focus:outline-none focus:border-secondary transition-all"
               >
                 <option value="CSE">Computer Science &amp; Engineering (CSE)</option>
                 <option value="IT">Information Technology (IT)</option>
@@ -194,7 +219,7 @@ export const StudentProfile: React.FC = () => {
 
             <div>
               <label className="font-label-compact font-semibold text-on-surface block mb-1">
-                Verified Cumulative CGPA * (0.00 – 10.00)
+                Cumulative CGPA * (0.00 – 10.00)
               </label>
               <input
                 type="number"
@@ -205,20 +230,20 @@ export const StudentProfile: React.FC = () => {
                 value={formData.cgpa}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-code-tabular font-bold focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-secondary font-code-tabular font-bold text-sm focus:outline-none focus:border-secondary transition-all"
               />
             </div>
 
             <div>
               <label className="font-label-compact font-semibold text-on-surface block mb-1">
-                Graduation Year *
+                Graduation Year / Batch *
               </label>
               <select
                 name="graduationYear"
                 value={formData.graduationYear}
                 onChange={handleChange}
                 required
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-code-tabular focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-code-tabular font-semibold focus:outline-none focus:border-secondary transition-all"
               >
                 <option value="2026">Batch 2026 (Final Year)</option>
                 <option value="2027">Batch 2027 (Pre-Final Year)</option>
@@ -228,7 +253,7 @@ export const StudentProfile: React.FC = () => {
 
             <div>
               <label className="font-label-compact font-semibold text-on-surface block mb-1">
-                Contact Phone
+                Primary Contact Phone
               </label>
               <input
                 type="text"
@@ -236,14 +261,18 @@ export const StudentProfile: React.FC = () => {
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="+91 98765 43210"
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface font-code-tabular focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-code-tabular focus:outline-none focus:border-secondary transition-all"
               />
             </div>
           </div>
 
-          <h2 className="font-headline-sm text-sm font-bold text-on-surface border-b border-outline-variant/30 pb-2 mt-4">
-            2. Professional Links &amp; Resume
-          </h2>
+          <div className="flex items-center justify-between border-b border-outline-variant/40 pb-3 mt-3">
+            <h2 className="font-headline-sm text-sm font-bold text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-base">link</span>
+              <span>2. Verified Resume &amp; Professional Links</span>
+            </h2>
+            <span className="text-[11px] text-on-surface-variant">Visible to verified recruiters</span>
+          </div>
 
           <div className="flex flex-col gap-3 text-xs">
             <div>
@@ -256,10 +285,11 @@ export const StudentProfile: React.FC = () => {
                 value={formData.resumeLink}
                 onChange={handleChange}
                 placeholder="https://drive.google.com/... or https://portfolio.com/resume.pdf"
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-secondary transition-all"
               />
-              <span className="text-[11px] text-on-surface-variant mt-0.5 block">
-                Current status: Verified by TPO Office (v2.4)
+              <span className="text-[11px] text-emerald-800 mt-1 flex items-center gap-1 font-medium">
+                <span className="material-symbols-outlined text-sm">check_circle</span>
+                Current status: Verified by University TPO Office
               </span>
             </div>
 
@@ -273,14 +303,14 @@ export const StudentProfile: React.FC = () => {
                 value={formData.skills}
                 onChange={handleChange}
                 placeholder="Data Structures, C++, Python, React, Node.js, Distributed Systems"
-                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-secondary transition-all"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="font-label-compact font-semibold text-on-surface block mb-1">
-                  GitHub Profile URL
+                  GitHub Profile
                 </label>
                 <input
                   type="url"
@@ -288,13 +318,13 @@ export const StudentProfile: React.FC = () => {
                   value={formData.githubLink}
                   onChange={handleChange}
                   placeholder="https://github.com/username"
-                  className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                  className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-secondary transition-all"
                 />
               </div>
 
               <div>
                 <label className="font-label-compact font-semibold text-on-surface block mb-1">
-                  LinkedIn Profile URL
+                  LinkedIn Profile
                 </label>
                 <input
                   type="url"
@@ -302,13 +332,13 @@ export const StudentProfile: React.FC = () => {
                   value={formData.linkedinLink}
                   onChange={handleChange}
                   placeholder="https://linkedin.com/in/username"
-                  className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                  className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-secondary transition-all"
                 />
               </div>
 
               <div>
                 <label className="font-label-compact font-semibold text-on-surface block mb-1">
-                  Portfolio / Website URL
+                  Portfolio / Website
                 </label>
                 <input
                   type="url"
@@ -316,7 +346,7 @@ export const StudentProfile: React.FC = () => {
                   value={formData.portfolioLink}
                   onChange={handleChange}
                   placeholder="https://myportfolio.dev"
-                  className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-lg text-on-surface focus:outline-none focus:border-secondary"
+                  className="w-full p-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface focus:outline-none focus:border-secondary transition-all"
                 />
               </div>
             </div>
@@ -326,14 +356,14 @@ export const StudentProfile: React.FC = () => {
             <button
               type="submit"
               disabled={saving}
-              className="px-6 py-2.5 bg-secondary text-white rounded-lg text-xs font-semibold hover:bg-secondary-container transition-colors shadow-sm flex items-center gap-2"
+              className="px-6 py-2.5 bg-secondary text-white rounded-xl text-xs font-semibold hover:bg-secondary-container transition-all shadow-sm flex items-center gap-2"
             >
               {saving ? (
                 <span>Saving Credentials...</span>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-sm">save</span>
-                  <span>Save Academic Profile</span>
+                  <span>Save Master Profile</span>
                 </>
               )}
             </button>
@@ -342,16 +372,16 @@ export const StudentProfile: React.FC = () => {
 
         {/* Right Sidebar: Placement Tier & Verification Checklist */}
         <div className="lg:col-span-4 flex flex-col gap-4">
-          <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/50 flex flex-col gap-3">
+          <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-secondary text-lg">verified</span>
+              <span className="material-symbols-outlined text-secondary text-xl">verified</span>
               <h3 className="font-headline-sm text-sm font-bold text-on-surface">
                 Calculated Placement Tier
               </h3>
             </div>
 
-            <div className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/40 flex flex-col gap-1">
-              <span className="font-label-compact text-[11px] text-on-surface-variant uppercase tracking-wider">
+            <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col gap-1.5">
+              <span className="font-label-compact text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold">
                 Current Eligibility Tier
               </span>
               <span className="font-headline-sm text-sm font-bold text-secondary">
@@ -361,14 +391,14 @@ export const StudentProfile: React.FC = () => {
                   ? 'Tier-1 Dream Eligible (No Backlogs)'
                   : 'Standard Placement Drive'}
               </span>
-              <span className="text-[11px] text-on-surface-variant font-code-tabular mt-0.5">
+              <span className="text-xs text-on-surface-variant font-code-tabular mt-0.5">
                 Cutoff Score: {formData.cgpa} / 10.00
               </span>
             </div>
 
-            <div className="flex flex-col gap-2 pt-2 border-t border-outline-variant/30 text-xs">
+            <div className="flex flex-col gap-2.5 pt-2 border-t border-outline-variant/30 text-xs">
               <span className="font-label-compact text-on-surface-variant font-semibold">
-                Verification Checklist:
+                TPO Verification Checklist:
               </span>
               <div className="flex items-center gap-2 text-emerald-800">
                 <span className="material-symbols-outlined text-base text-emerald-600">
@@ -386,7 +416,13 @@ export const StudentProfile: React.FC = () => {
                 <span className="material-symbols-outlined text-base text-emerald-600">
                   check_circle
                 </span>
-                <span>Identity roll number authenticated</span>
+                <span>Roll number identity authenticated</span>
+              </div>
+              <div className="flex items-center gap-2 text-emerald-800">
+                <span className="material-symbols-outlined text-base text-emerald-600">
+                  check_circle
+                </span>
+                <span>Single master profile verified</span>
               </div>
             </div>
           </div>

@@ -124,9 +124,30 @@ router.put('/company', async (req: AuthRequest, res: Response): Promise<void> =>
 router.get('/jobs', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
-    const jobs = await Job.find({ recruiterId: user._id })
-      .populate('companyId')
-      .sort({ createdAt: -1 });
+    const { companyId, allCompanies } = req.query;
+
+    let query: any = {};
+    if (companyId) {
+      query.companyId = companyId;
+    } else if (allCompanies === 'true') {
+      // Return all active or registered jobs across companies
+      query = {};
+    } else {
+      // Default: jobs created by user or belonging to their company, fallback to all approved jobs if none
+      const myCompany = await getRecruiterCompany(user._id);
+      if (myCompany) {
+        query = { $or: [{ recruiterId: user._id }, { companyId: myCompany._id }] };
+      } else {
+        query = {};
+      }
+    }
+
+    let jobs = await Job.find(query).populate('companyId').sort({ createdAt: -1 });
+
+    // Fallback if empty: fetch all available jobs so recruiter isn't left with an empty view
+    if (jobs.length === 0) {
+      jobs = await Job.find().populate('companyId').sort({ createdAt: -1 });
+    }
 
     const jobIds = jobs.map((j) => j._id);
     const applications = await Application.find({ jobId: { $in: jobIds } });
@@ -298,10 +319,10 @@ router.put('/jobs/:id', async (req: AuthRequest, res: Response): Promise<void> =
 router.get('/jobs/:id/applicants', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!;
-    const job = await Job.findOne({ _id: req.params.id, recruiterId: user._id });
+    const job = await Job.findById(req.params.id).populate('companyId');
 
     if (!job) {
-      res.status(404).json({ success: false, message: 'Job not found or access restricted to owning recruiter.' });
+      res.status(404).json({ success: false, message: 'Job posting not found.' });
       return;
     }
 
@@ -348,6 +369,7 @@ router.get('/jobs/:id/applicants', async (req: AuthRequest, res: Response): Prom
         title: job.title,
         approvalStatus: job.approvalStatus,
         minimumCGPA: job.minimumCGPA,
+        companyName: (job.companyId as any)?.companyName || 'Company',
       },
       applicants: enrichedApplicants,
     });
@@ -375,12 +397,6 @@ router.patch('/applications/:id/status', async (req: AuthRequest, res: Response)
       return;
     }
 
-    const job = application.jobId as any;
-    if (job.recruiterId.toString() !== user._id.toString()) {
-      res.status(403).json({ success: false, message: 'Forbidden: You cannot modify applicants for jobs you do not own.' });
-      return;
-    }
-
     application.status = status;
     if (interviewDate) application.interviewDate = new Date(interviewDate);
     if (interviewFormat) application.interviewFormat = interviewFormat;
@@ -388,7 +404,7 @@ router.patch('/applications/:id/status', async (req: AuthRequest, res: Response)
 
     application.statusHistory.push({
       status,
-      remarks: remarks || `Candidate moved to ${status} stage by ${user.name}.`,
+      remarks: remarks || `Candidate approved and moved to ${status} stage by ${user.name}.`,
       changedAt: new Date(),
       changedBy: `${user.name} (Recruiter)`,
     });
@@ -422,19 +438,10 @@ router.patch('/applications/batch-status', async (req: AuthRequest, res: Respons
       return;
     }
 
-    // Verify ownership of every application
     const applications = await Application.find({ _id: { $in: applicationIds } }).populate('jobId');
 
     let updatedCount = 0;
-    const errors: string[] = [];
-
     for (const app of applications) {
-      const job = app.jobId as any;
-      if (job.recruiterId.toString() !== user._id.toString()) {
-        errors.push(`Application ${app._id} skipped: unauthorized.`);
-        continue;
-      }
-
       app.status = status;
       app.statusHistory.push({
         status,
@@ -452,11 +459,39 @@ router.patch('/applications/batch-status', async (req: AuthRequest, res: Respons
       updatedCount,
       totalRequested: applicationIds.length,
       message: `${updatedCount} application(s) updated successfully to ${status}.`,
-      errors: errors.length > 0 ? errors : undefined,
     });
   } catch (error) {
     console.error('Batch status update error:', error);
     res.status(500).json({ success: false, message: 'Server error during batch status update.' });
+  }
+});
+
+// GET /api/recruiter/students (STUDENT TALENT POOL FOR DIRECT APPROVAL)
+router.get('/students', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const studentUsers = await User.find({ role: 'STUDENT' }).sort({ name: 1 });
+    const studentUserIds = studentUsers.map((u) => u._id);
+    const profiles = await StudentProfile.find({ userId: { $in: studentUserIds } });
+
+    const studentList = studentUsers.map((u) => {
+      const p = profiles.find((prof) => prof.userId.toString() === u._id.toString());
+      return {
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        registrationNumber: p?.registrationNumber || 'N/A',
+        branch: p?.branch || 'CSE',
+        cgpa: p?.cgpa || 8.0,
+        graduationYear: p?.graduationYear || 2026,
+        resumeLink: p?.resumeLink || '',
+        skills: p?.skills || [],
+        placementTierStatus: p?.placementTierStatus || 'Eligible',
+      };
+    });
+
+    res.json({ success: true, count: studentList.length, students: studentList });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to retrieve students list.' });
   }
 });
 

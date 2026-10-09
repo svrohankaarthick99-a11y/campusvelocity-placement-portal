@@ -9,6 +9,8 @@ import { Sidebar } from './components/layout/Sidebar.tsx';
 import { Header } from './components/layout/Header.tsx';
 import { ToastContainer } from './components/common/ToastContainer.tsx';
 import { AuthModal } from './components/auth/AuthModal.tsx';
+import { EntranceGateway } from './components/auth/EntranceGateway.tsx';
+import { RecruiterCompanyModal } from './components/recruiter/RecruiterCompanyModal.tsx';
 
 // Student Views
 import { StudentDashboard } from './components/student/StudentDashboard.tsx';
@@ -48,7 +50,17 @@ const AppContent: React.FC = () => {
     );
   }
 
-  const role = user?.role || 'STUDENT';
+  // If user is not authenticated or freshly entering without profile selection:
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <EntranceGateway />
+        <ToastContainer />
+      </div>
+    );
+  }
+
+  const role = user.role;
 
   const renderContent = () => {
     // 1. Student Portal Views
@@ -133,6 +145,9 @@ const AppContent: React.FC = () => {
 
       {/* Auth modal */}
       <AuthModal />
+
+      {/* Recruiter Company Selection Modal */}
+      <RecruiterCompanyModal />
     </div>
   );
 };

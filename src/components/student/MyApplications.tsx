@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { api } from '../../services/api.ts';
 import { ApplicationData } from '../../types.ts';
+import { VirtualInterviewRoom } from './VirtualInterviewRoom.tsx';
 
 export const MyApplications: React.FC = () => {
   const { showToast } = useAuth();
   const [applications, setApplications] = useState<ApplicationData[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedOfferLetter, setSelectedOfferLetter] = useState<any>(null);
+  const [activeInterviewApp, setActiveInterviewApp] = useState<ApplicationData | null>(null);
 
   const fetchApplications = async () => {
     try {
@@ -24,7 +26,6 @@ export const MyApplications: React.FC = () => {
 
   useEffect(() => {
     fetchApplications();
-    // Real-time polling every 8s for live status updates from recruiters
     const interval = setInterval(fetchApplications, 8000);
     return () => clearInterval(interval);
   }, []);
@@ -46,35 +47,60 @@ export const MyApplications: React.FC = () => {
 
   const stages = ['APPLIED', 'SHORTLISTED', 'INTERVIEW', 'SELECTED'];
 
+  const interviewCount = applications.filter((a) => a.status === 'INTERVIEW').length;
+  const selectedCount = applications.filter((a) => a.status === 'SELECTED').length;
+  const shortlistedCount = applications.filter((a) => a.status === 'SHORTLISTED').length;
+
   return (
-    <div className="flex flex-col w-full max-w-[1536px] mx-auto px-6 py-6 gap-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/50">
+    <div className="flex flex-col w-full max-w-[1536px] mx-auto px-4 sm:px-6 py-6 gap-6">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60">
         <div>
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-xl">description</span>
+            <span className="material-symbols-outlined text-secondary text-2xl">description</span>
             <h1 className="font-headline-lg text-2xl font-bold text-on-surface">
               My Campus Applications
             </h1>
           </div>
           <p className="font-body-sm text-xs text-on-surface-variant mt-1">
-            Real-time pipeline tracking and chronological recruitment history
+            Real-time multi-drive pipeline tracker with authoritative institutional status syncing
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-surface-container text-secondary self-start sm:self-auto">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Live Sync Active • {applications.length} Submitted
+
+        {/* Quick KPI Pills */}
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <div className="px-3 py-1.5 rounded-xl bg-surface-container-low border border-outline-variant/40 font-semibold text-on-surface">
+            Total: {applications.length}
+          </div>
+          {shortlistedCount > 0 && (
+            <div className="px-3 py-1.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-200 font-semibold">
+              Shortlisted: {shortlistedCount}
+            </div>
+          )}
+          {interviewCount > 0 && (
+            <div className="px-3 py-1.5 rounded-xl bg-secondary-fixed text-on-secondary-fixed border border-secondary-fixed-dim font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+              Interviews: {interviewCount}
+            </div>
+          )}
+          {selectedCount > 0 && (
+            <div className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold flex items-center gap-1">
+              <span className="material-symbols-outlined text-sm">verified</span>
+              Offers: {selectedCount}
+            </div>
+          )}
         </div>
       </div>
 
       {loading ? (
-        <div className="p-12 text-center bg-surface-container-lowest rounded-xl border border-outline-variant/50">
+        <div className="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/50">
           <span className="material-symbols-outlined text-3xl animate-spin text-secondary">
             progress_activity
           </span>
           <p className="text-xs text-on-surface-variant mt-2">Loading application pipeline...</p>
         </div>
       ) : applications.length === 0 ? (
-        <div className="p-12 text-center bg-surface-container-lowest rounded-xl border border-outline-variant/50 flex flex-col items-center">
+        <div className="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/50 flex flex-col items-center">
           <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-2">
             folder_open
           </span>
@@ -82,7 +108,7 @@ export const MyApplications: React.FC = () => {
             No Applications Submitted Yet
           </h3>
           <p className="text-xs text-on-surface-variant mt-1">
-            Browse active drives to discover eligible opportunities matching your CGPA and branch.
+            Browse active company drives to discover opportunities matching your CGPA and department.
           </p>
         </div>
       ) : (
@@ -92,21 +118,24 @@ export const MyApplications: React.FC = () => {
             const company = app.companyId as any;
             const isRejected = app.status === 'REJECTED';
             const isSelected = app.status === 'SELECTED';
+            const isInterview = app.status === 'INTERVIEW';
 
             const currentStageIndex = isRejected ? -1 : stages.indexOf(app.status);
 
             return (
               <div
                 key={app._id}
-                className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/50 flex flex-col gap-4"
+                className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col gap-4 hover:shadow-md transition-shadow"
               >
                 {/* Header Row */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-start gap-3.5">
                     <div
-                      className={`w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg ${
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 ${
                         isSelected
-                          ? 'bg-emerald-50 text-emerald-800'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : isInterview
+                          ? 'bg-secondary-fixed text-on-secondary-fixed border border-secondary-fixed-dim'
                           : 'bg-surface-container text-secondary'
                       }`}
                     >
@@ -119,14 +148,16 @@ export const MyApplications: React.FC = () => {
                         </span>
                         <span className="text-outline-variant">•</span>
                         <span className="font-code-tabular text-xs text-on-surface-variant font-medium">
-                          App ID: #{app._id.slice(-6).toUpperCase()}
+                          Ref #{app._id.slice(-6).toUpperCase()}
                         </span>
                       </div>
                       <h2 className="font-headline-sm text-lg font-bold text-on-surface mt-0.5">
                         {job?.title || 'Campus Placement Role'}
                       </h2>
-                      <div className="flex items-center gap-3 text-xs text-on-surface-variant font-body-sm mt-1">
-                        <span>Compensation: {job?.stipendOrCTC || 'As per norms'}</span>
+                      <div className="flex items-center gap-2.5 text-xs text-on-surface-variant font-body-sm mt-1">
+                        <span className="font-code-tabular font-semibold text-on-surface">
+                          CTC: {job?.stipendOrCTC || 'As per norms'}
+                        </span>
                         <span>•</span>
                         <span>Location: {job?.location || 'Pan India'}</span>
                       </div>
@@ -135,16 +166,18 @@ export const MyApplications: React.FC = () => {
 
                   <div className="flex flex-col items-start sm:items-end gap-1">
                     <span
-                      className={`px-3 py-1 rounded border font-label-compact text-xs font-bold uppercase tracking-wider ${getStatusColor(
+                      className={`px-3 py-1 rounded-full border font-label-compact text-xs font-bold uppercase tracking-wider ${getStatusColor(
                         app.status
                       )}`}
                     >
                       {app.status === 'SELECTED'
-                        ? 'Selected • Offer Released'
-                        : `Status: ${app.status}`}
+                        ? 'Selected • Formal Offer'
+                        : app.status === 'INTERVIEW'
+                        ? 'Round 2 • Interview Active'
+                        : `Stage: ${app.status}`}
                     </span>
                     <span className="font-body-sm text-[11px] text-on-surface-variant">
-                      Applied on{' '}
+                      Applied:{' '}
                       {new Date(app.appliedAt).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -157,7 +190,7 @@ export const MyApplications: React.FC = () => {
                 {/* Pipeline Step Tracker */}
                 {!isRejected ? (
                   <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/30 flex flex-col gap-3">
-                    <span className="font-label-compact text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
+                    <span className="font-label-compact text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">
                       Recruitment Pipeline Progression
                     </span>
                     <div className="grid grid-cols-4 gap-2 relative">
@@ -199,7 +232,7 @@ export const MyApplications: React.FC = () => {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-3 rounded-lg bg-error-container text-on-error-container text-xs flex items-center gap-2">
+                  <div className="p-3 rounded-xl bg-error-container text-on-error-container text-xs flex items-center gap-2">
                     <span className="material-symbols-outlined text-base">cancel</span>
                     <span>
                       Application not progressed by recruiter. Candidate released to apply for other drives.
@@ -207,40 +240,39 @@ export const MyApplications: React.FC = () => {
                   </div>
                 )}
 
-                {/* Interview Notice or Offer Action */}
-                {app.status === 'INTERVIEW' && app.interviewDate && (
-                  <div className="p-3 rounded-lg bg-secondary-fixed text-on-secondary-fixed text-xs flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-base text-secondary">
-                        event_available
-                      </span>
-                      <span>
-                        Technical Interview scheduled for:{' '}
-                        <strong>
-                          {new Date(app.interviewDate).toLocaleString('en-US', {
-                            dateStyle: 'medium',
-                            timeStyle: 'short',
-                          })}
-                        </strong>{' '}
-                        ({app.interviewFormat || 'Virtual Meet'})
-                      </span>
+                {/* INTERVIEW OPTION: Interactive Attend Interview Banner */}
+                {isInterview && (
+                  <div className="p-4 rounded-xl bg-secondary-fixed border border-secondary text-on-secondary-fixed text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="flex items-start sm:items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-secondary text-white flex items-center justify-center shrink-0 shadow-xs">
+                        <span className="material-symbols-outlined text-xl">video_camera_front</span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-sm text-on-secondary-fixed">
+                            Technical Interview Round Active
+                          </span>
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        </div>
+                        <p className="text-[11px] text-on-secondary-fixed/90 mt-0.5">
+                          Format: {app.interviewFormat || 'Virtual Meet Panel & Code Evaluation'} •
+                          Panelists connected
+                        </p>
+                      </div>
                     </div>
+
                     <button
                       type="button"
-                      onClick={() =>
-                        showToast({
-                          type: 'info',
-                          title: 'Interview Details',
-                          message: 'Link: https://meet.google.com/nit-placement-drive (Host: Recruiter TA)',
-                        })
-                      }
-                      className="px-2.5 py-1 bg-secondary text-white rounded text-xs font-semibold"
+                      onClick={() => setActiveInterviewApp(app)}
+                      className="px-5 py-2.5 bg-secondary text-white rounded-xl text-xs font-bold hover:bg-secondary-container transition-all flex items-center gap-2 shadow-sm shrink-0 self-start sm:self-auto"
                     >
-                      Join Link
+                      <span className="material-symbols-outlined text-base">meeting_room</span>
+                      <span>Attend Interview (Enter Room)</span>
                     </button>
                   </div>
                 )}
 
+                {/* Offer Letter Box if Selected */}
                 {isSelected && (
                   <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -249,11 +281,10 @@ export const MyApplications: React.FC = () => {
                       </span>
                       <div>
                         <span className="font-label-prominent text-xs font-bold text-emerald-900 block">
-                          Formal Campus Placement Offer Released!
+                          Official Campus Placement Offer Released!
                         </span>
                         <span className="font-code-tabular text-xs text-emerald-800">
-                          Letter Ref: {app.offerLetterRef || 'CAMPUS-2026-NIT-OFFER'} • Verified by
-                          TPO Cell
+                          Ref: {app.offerLetterRef || 'CAMPUS-2026-NIT-OFFER'} • Verified by TPO Cell
                         </span>
                       </div>
                     </div>
@@ -268,7 +299,7 @@ export const MyApplications: React.FC = () => {
                           date: new Date(app.updatedAt).toLocaleDateString(),
                         })
                       }
-                      className="px-3.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-label-prominent text-xs font-semibold transition-colors flex items-center gap-1 shadow-sm shrink-0"
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-label-prominent text-xs font-semibold transition-colors flex items-center gap-1 shadow-sm shrink-0"
                     >
                       <span className="material-symbols-outlined text-sm">visibility</span>
                       <span>View Formal Letter</span>
@@ -280,9 +311,9 @@ export const MyApplications: React.FC = () => {
                 {app.statusHistory && app.statusHistory.length > 0 && (
                   <div className="flex flex-col gap-2 pt-2 border-t border-outline-variant/30">
                     <span className="font-label-compact text-xs text-on-surface-variant font-semibold">
-                      Chronological Activity Log:
+                      Chronological Action Trail:
                     </span>
-                    <div className="flex flex-col gap-2 pl-2 border-l-2 border-outline-variant">
+                    <div className="flex flex-col gap-2 pl-2 border-l-2 border-outline-variant/60">
                       {app.statusHistory.map((h, i) => (
                         <div key={i} className="flex flex-col text-xs">
                           <div className="flex items-center gap-2">
@@ -316,6 +347,17 @@ export const MyApplications: React.FC = () => {
             );
           })}
         </div>
+      )}
+
+      {/* VIRTUAL INTERVIEW ROOM MODAL */}
+      {activeInterviewApp && (
+        <VirtualInterviewRoom
+          application={activeInterviewApp}
+          onClose={() => setActiveInterviewApp(null)}
+          onAttendanceCompleted={() => {
+            fetchApplications();
+          }}
+        />
       )}
 
       {/* Offer Letter Modal */}
@@ -397,3 +439,4 @@ export const MyApplications: React.FC = () => {
     </div>
   );
 };
+

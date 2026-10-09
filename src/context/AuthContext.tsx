@@ -20,13 +20,16 @@ interface AuthContextType {
   toggleSidebar: () => void;
   showAuthModal: boolean;
   setShowAuthModal: (show: boolean) => void;
+  showRecruiterCompanyModal: boolean;
+  setShowRecruiterCompanyModal: (show: boolean) => void;
+  openRecruiterCompanyModal: () => void;
   toasts: Toast[];
   showToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (payload: any) => Promise<void>;
   logout: () => void;
-  quickSwitchRole: (role: UserRole) => Promise<void>;
+  quickSwitchRole: (role: UserRole, options?: { email?: string; companyId?: string }) => Promise<void>;
   refreshUser: () => Promise<void>;
 }
 
@@ -38,9 +41,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [showRecruiterCompanyModal, setShowRecruiterCompanyModal] = useState<boolean>(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
+  const openRecruiterCompanyModal = () => setShowRecruiterCompanyModal(true);
 
   const showToast = (toast: Omit<Toast, 'id'>) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
@@ -55,19 +60,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const refreshUser = async () => {
+    const hasChosenRole = sessionStorage.getItem('entered_role_profile');
     const token = tokenStorage.get();
-    if (!token) {
-      // Auto-login default demo student on fresh visit so the exact Stitch screen appears immediately!
-      try {
-        const res = await api.auth.quickSwitch('STUDENT');
-        if (res.user) {
-          setUser(res.user);
-        }
-      } catch (err) {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
+
+    // If first time entering link or no profile chosen in this session:
+    if (!hasChosenRole || !token) {
+      tokenStorage.clear();
+      setUser(null);
+      setLoading(false);
       return;
     }
 
@@ -75,11 +75,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const res = await api.auth.me();
       if (res.user) {
         setUser(res.user);
+        if (res.user.role === 'STUDENT') {
+          sessionStorage.setItem('active_student_email', res.user.email);
+        }
       } else {
+        tokenStorage.clear();
+        sessionStorage.removeItem('entered_role_profile');
         setUser(null);
       }
     } catch (err) {
       tokenStorage.clear();
+      sessionStorage.removeItem('entered_role_profile');
       setUser(null);
     } finally {
       setLoading(false);
@@ -94,6 +100,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await api.auth.login(email, password);
       if (res.user) {
+        sessionStorage.setItem('entered_role_profile', 'true');
+        if (res.user.role === 'STUDENT') {
+          sessionStorage.setItem('active_student_email', res.user.email);
+          localStorage.setItem('active_student_email', res.user.email);
+        }
         setUser(res.user);
         setActiveTab('dashboard');
         setShowAuthModal(false);
@@ -117,13 +128,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     try {
       const res = await api.auth.register(payload);
       if (res.user) {
+        sessionStorage.setItem('entered_role_profile', 'true');
+        if (res.user.role === 'STUDENT') {
+          sessionStorage.setItem('active_student_email', res.user.email);
+          localStorage.setItem('active_student_email', res.user.email);
+        }
         setUser(res.user);
         setActiveTab('dashboard');
         setShowAuthModal(false);
         showToast({
           type: 'success',
-          title: 'Registration Successful',
-          message: `Account created for ${res.user.name}. Welcome to CampusVelocity!`,
+          title: 'Profile Initialized',
+          message: `Welcome ${res.user.name}! Your ${res.user.role} profile is ready.`,
         });
       }
     } catch (error: any) {
@@ -138,20 +154,38 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = () => {
     api.auth.logout();
+    sessionStorage.removeItem('entered_role_profile');
+    sessionStorage.removeItem('active_student_email');
+    localStorage.removeItem('active_student_email');
     setUser(null);
     setActiveTab('dashboard');
     showToast({
       type: 'info',
-      title: 'Logged Out',
-      message: 'You have been logged out of the placement portal.',
+      title: 'Session Ended',
+      message: 'You have returned to the portal entrance.',
     });
   };
 
-  const quickSwitchRole = async (role: UserRole) => {
+  const quickSwitchRole = async (role: UserRole, options?: { email?: string; companyId?: string }) => {
     setLoading(true);
     try {
-      const res = await api.auth.quickSwitch(role);
+      let switchOptions = options;
+      if (role === 'STUDENT' && (!options || !options.email)) {
+        const storedStudentEmail =
+          sessionStorage.getItem('active_student_email') ||
+          localStorage.getItem('active_student_email');
+        if (storedStudentEmail) {
+          switchOptions = { ...(options || {}), email: storedStudentEmail };
+        }
+      }
+
+      const res = await api.auth.quickSwitch(role, switchOptions);
       if (res.user) {
+        sessionStorage.setItem('entered_role_profile', 'true');
+        if (res.user.role === 'STUDENT') {
+          sessionStorage.setItem('active_student_email', res.user.email);
+          localStorage.setItem('active_student_email', res.user.email);
+        }
         setUser(res.user);
         setActiveTab('dashboard');
         showToast({
@@ -183,6 +217,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         toggleSidebar,
         showAuthModal,
         setShowAuthModal,
+        showRecruiterCompanyModal,
+        setShowRecruiterCompanyModal,
+        openRecruiterCompanyModal,
         toasts,
         showToast,
         removeToast,

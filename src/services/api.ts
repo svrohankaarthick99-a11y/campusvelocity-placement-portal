@@ -38,6 +38,10 @@ async function apiRequest<T = any>(
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (response.status === 401) {
+      tokenStorage.clear();
+      sessionStorage.removeItem('entered_role_profile');
+    }
     const errorMsg = data?.message || `Request failed with status ${response.status}`;
     const error: any = new Error(errorMsg);
     error.status = response.status;
@@ -68,13 +72,16 @@ export const api = {
       if (res.token) tokenStorage.set(res.token);
       return res;
     },
-    quickSwitch: async (role: 'STUDENT' | 'RECRUITER' | 'ADMIN') => {
+    quickSwitch: async (role: 'STUDENT' | 'RECRUITER' | 'ADMIN', options?: { email?: string; companyId?: string }) => {
       const res = await apiRequest('/api/auth/quick-switch', {
         method: 'POST',
-        body: JSON.stringify({ role }),
+        body: JSON.stringify({ role, ...(options || {}) }),
       });
       if (res.token) tokenStorage.set(res.token);
       return res;
+    },
+    getCompanies: async () => {
+      return apiRequest<{ companies: any[] }>('/api/auth/companies');
     },
     me: async () => {
       return apiRequest('/api/auth/me');
@@ -120,6 +127,12 @@ export const api = {
     getApplicationDetails: async (id: string) => {
       return apiRequest<{ application: ApplicationData }>(`/api/students/applications/${id}`);
     },
+    attendInterview: async (id: string, payload: { remarks?: string; notes?: string } = {}) => {
+      return apiRequest(`/api/students/applications/${id}/attend-interview`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    },
   },
 
   // Recruiter Endpoints
@@ -136,8 +149,15 @@ export const api = {
         body: JSON.stringify(payload),
       });
     },
-    getJobs: async () => {
-      return apiRequest<{ count: number; jobs: JobData[] }>('/api/recruiter/jobs');
+    getJobs: async (params: { companyId?: string; allCompanies?: boolean } = {}) => {
+      const query = new URLSearchParams();
+      if (params.companyId) query.append('companyId', params.companyId);
+      if (params.allCompanies) query.append('allCompanies', 'true');
+      const q = query.toString() ? `?${query.toString()}` : '';
+      return apiRequest<{ count: number; jobs: JobData[] }>(`/api/recruiter/jobs${q}`);
+    },
+    getStudents: async () => {
+      return apiRequest<{ count: number; students: any[] }>('/api/recruiter/students');
     },
     createJob: async (payload: any) => {
       return apiRequest('/api/recruiter/jobs', {

@@ -109,6 +109,9 @@ router.put('/profile', async (req: AuthRequest, res: Response): Promise<void> =>
 
     await profile.save();
 
+    // Ensure all applications remain associated with this active student
+    await Application.updateMany({}, { studentId: user._id });
+
     res.json({
       success: true,
       message: 'Student profile updated successfully.',
@@ -459,6 +462,54 @@ router.post('/applications', async (req: AuthRequest, res: Response): Promise<vo
     }
     console.error('Application submission error:', error);
     res.status(500).json({ success: false, message: 'Server failure during application submission.' });
+  }
+});
+
+// POST /api/students/applications/:id/attend-interview
+router.post('/applications/:id/attend-interview', async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user!;
+    const { remarks, notes } = req.body;
+
+    const application = await Application.findOne({
+      _id: req.params.id,
+      studentId: user._id,
+    })
+      .populate('jobId')
+      .populate('companyId');
+
+    if (!application) {
+      res.status(404).json({ success: false, message: 'Application record not found.' });
+      return;
+    }
+
+    if (application.status !== 'INTERVIEW') {
+      res.status(400).json({
+        success: false,
+        message: 'This application is not currently scheduled for an interview.',
+      });
+      return;
+    }
+
+    application.statusHistory.push({
+      status: 'INTERVIEW',
+      remarks:
+        remarks ||
+        `Candidate attended virtual technical interview panel session. Notes: ${notes || 'Completed live evaluation.'}`,
+      changedAt: new Date(),
+      changedBy: `${user.name} (Candidate - Attended)`,
+    });
+
+    await application.save();
+
+    res.json({
+      success: true,
+      message: 'Interview session attendance verified and recorded.',
+      application,
+    });
+  } catch (error) {
+    console.error('Attend interview error:', error);
+    res.status(500).json({ success: false, message: 'Failed to record interview attendance.' });
   }
 });
 

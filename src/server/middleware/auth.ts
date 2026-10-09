@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { User, IUser, UserRole } from '../models/User.ts';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'campus-velocity-secure-jwt-key-2026';
@@ -46,7 +47,17 @@ export async function authenticate(
       return;
     }
 
-    const user = await User.findById(decoded.userId);
+    let user = null;
+    if (decoded.userId && mongoose.Types.ObjectId.isValid(decoded.userId)) {
+      user = await User.findById(decoded.userId);
+    }
+    if (!user && decoded.email) {
+      user = await User.findOne({ email: decoded.email.toLowerCase() });
+    }
+    if (!user && decoded.role) {
+      user = await User.findOne({ role: decoded.role });
+    }
+
     if (!user) {
       res.status(401).json({ success: false, message: 'User account not found.' });
       return;

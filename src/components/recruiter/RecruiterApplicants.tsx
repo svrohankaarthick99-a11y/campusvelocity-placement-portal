@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { api } from '../../services/api.ts';
-import { ApplicationStatus, JobData } from '../../types.ts';
+import { ApplicationStatus, JobData, CompanyData } from '../../types.ts';
+import { VirtualInterviewRoom } from '../student/VirtualInterviewRoom.tsx';
 
 interface RecruiterApplicantsProps {
   initialJobId?: string | null;
 }
 
 export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initialJobId }) => {
-  const { showToast } = useAuth();
+  const { user, showToast } = useAuth();
+  const [companies, setCompanies] = useState<CompanyData[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('ALL');
   const [jobs, setJobs] = useState<JobData[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<string>('');
   const [applicants, setApplicants] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -25,9 +29,15 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
   // Single candidate inspection modal
   const [activeCandidate, setActiveCandidate] = useState<any>(null);
 
-  // "Add Profile" modal state
+  // Interview preview modal state
+  const [interviewPreviewApp, setInterviewPreviewApp] = useState<any>(null);
+
+  // "Add Profile & Approve" modal state
   const [showAddProfileModal, setShowAddProfileModal] = useState<boolean>(false);
   const [submittingProfile, setSubmittingProfile] = useState<boolean>(false);
+  const [profileSourceMode, setProfileSourceMode] = useState<'EXISTING' | 'NEW'>('EXISTING');
+  const [selectedExistingStudentId, setSelectedExistingStudentId] = useState<string>('');
+
   const [newCandidateForm, setNewCandidateForm] = useState({
     name: '',
     email: '',
@@ -37,34 +47,79 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
     graduationYear: '2026',
     resumeLink: '',
     skills: 'React, Node.js, C++, Data Structures',
+    companyId: '',
     jobId: '',
     status: 'SHORTLISTED' as ApplicationStatus,
     remarks: 'Candidate profile verified and approved for next evaluation round.',
   });
 
-  // Fetch recruiter's jobs first
+  // Fetch all companies, jobs, and students pool
   useEffect(() => {
-    const fetchJobs = async () => {
+    const fetchInitialData = async () => {
       try {
-        const res = await api.recruiter.getJobs();
-        if (res.jobs && res.jobs.length > 0) {
-          setJobs(res.jobs);
+        const [compRes, jobsRes, stuRes] = await Promise.all([
+          api.recruiter.getAllCompanies().catch(() => ({ companies: [] })),
+          api.recruiter.getJobs({ allCompanies: true }),
+          api.recruiter.getStudents().catch(() => ({ students: [] })),
+        ]);
+
+        if (compRes.companies) {
+          setCompanies(compRes.companies);
+        }
+
+        if (stuRes.students) {
+          setStudents(stuRes.students);
+          if (stuRes.students.length > 0) {
+            setSelectedExistingStudentId(stuRes.students[0].id);
+          }
+        }
+
+        if (jobsRes.jobs && jobsRes.jobs.length > 0) {
+          setJobs(jobsRes.jobs);
           const defaultJob =
-            initialJobId && res.jobs.some((j: any) => j._id === initialJobId)
+            initialJobId && jobsRes.jobs.some((j: any) => j._id === initialJobId)
               ? initialJobId
-              : res.jobs[0]._id;
+              : jobsRes.jobs[0]._id;
           setSelectedJobId(defaultJob);
-          setNewCandidateForm((prev) => ({ ...prev, jobId: defaultJob }));
+
+          const matchedJob = jobsRes.jobs.find((j: any) => j._id === defaultJob);
+          const compId = matchedJob ? (matchedJob.companyId as any)?._id || matchedJob.companyId : '';
+
+          setNewCandidateForm((prev) => ({
+            ...prev,
+            jobId: defaultJob,
+            companyId: compId,
+          }));
         }
       } catch (err) {
-        console.error('Error fetching jobs', err);
+        console.error('Error fetching initial recruiter data', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchJobs();
+    fetchInitialData();
   }, [initialJobId]);
+
+  // When selected existing student changes in modal, auto-fill form
+  useEffect(() => {
+    if (selectedExistingStudentId && profileSourceMode === 'EXISTING') {
+      const stu = students.find((s) => s.id === selectedExistingStudentId);
+      if (stu) {
+        setNewCandidateForm((prev) => ({
+          ...prev,
+          name: stu.name,
+          email: stu.email,
+          registrationNumber: stu.registrationNumber,
+          branch: stu.branch,
+          cgpa: String(stu.cgpa),
+          graduationYear: String(stu.graduationYear),
+          resumeLink: stu.resumeLink,
+          skills: Array.isArray(stu.skills) ? stu.skills.join(', ') : stu.skills || '',
+        }));
+      }
+    }
+  }, [selectedExistingStudentId, profileSourceMode, students]);
 
   // Fetch applicants whenever selectedJobId changes
   const fetchApplicants = async (jobId: string) => {
@@ -92,6 +147,20 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
       fetchApplicants(selectedJobId);
     }
   }, [selectedJobId]);
+
+  // When company filter changes in UI, update available jobs list
+  const filteredJobs = jobs.filter((j) => {
+    if (selectedCompanyId === 'ALL') return true;
+    const cId = (j.companyId as any)?._id || j.companyId;
+    return cId === selectedCompanyId;
+  });
+
+  // When filteredJobs changes and current selectedJobId is not inside, update selectedJobId
+  useEffect(() => {
+    if (filteredJobs.length > 0 && !filteredJobs.some((j) => j._id === selectedJobId)) {
+      setSelectedJobId(filteredJobs[0]._id);
+    }
+  }, [selectedCompanyId, jobs]);
 
   // Checkbox handlers
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +193,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
       const res = await api.recruiter.batchUpdateApplicantStatus(
         selectedAppIds,
         batchStatus,
-        batchRemarks || `Recruiter batch updated to ${batchStatus}.`
+        batchRemarks || `Recruiter batch updated and approved at stage: ${batchStatus}.`
       );
 
       showToast({
@@ -157,8 +226,8 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
       const res = await api.recruiter.updateApplicantStatus(applicationId, status, remarks);
       showToast({
         type: 'success',
-        title: 'Status Updated',
-        message: res.message || `Candidate moved to ${status}.`,
+        title: 'Candidate Approved',
+        message: res.message || `Application transitioned to stage: ${status}.`,
       });
       await fetchApplicants(selectedJobId);
       if (activeCandidate && activeCandidate.applicationId === applicationId) {
@@ -173,7 +242,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
     }
   };
 
-  // Handle Add Candidate Profile Submission
+  // Handle Add Candidate Profile & Approve Submission
   const handleAddProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingProfile(true);
@@ -196,27 +265,13 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
 
       showToast({
         type: 'success',
-        title: 'Profile Added & Approved',
+        title: 'Candidate Profile Linked & Approved',
         message:
           res.message ||
-          `Candidate ${newCandidateForm.name} profile added and application approved at stage: ${newCandidateForm.status}!`,
+          `Candidate ${newCandidateForm.name} profile linked and approved at stage: ${newCandidateForm.status}!`,
       });
 
       setShowAddProfileModal(false);
-      // Reset form
-      setNewCandidateForm({
-        name: '',
-        email: '',
-        registrationNumber: '',
-        branch: 'CSE',
-        cgpa: '8.50',
-        graduationYear: '2026',
-        resumeLink: '',
-        skills: 'React, Node.js, C++',
-        jobId: selectedJobId,
-        status: 'SHORTLISTED',
-        remarks: 'Candidate profile verified and approved for next evaluation round.',
-      });
 
       // Refresh applicants queue
       await fetchApplicants(targetJobId);
@@ -224,7 +279,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
       showToast({
         type: 'error',
         title: 'Addition Failed',
-        message: err.message || 'Failed to register candidate profile.',
+        message: err.message || 'Failed to process candidate profile.',
       });
     } finally {
       setSubmittingProfile(false);
@@ -246,64 +301,109 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
     return true;
   });
 
+  const currentJob = jobs.find((j) => j._id === selectedJobId);
+  const currentCompanyName = (currentJob?.companyId as any)?.companyName || 'Company';
+
   return (
     <div className="flex flex-col w-full max-w-[1536px] mx-auto px-4 sm:px-6 py-6 gap-6">
-      {/* Top Header & Job Selector */}
+      {/* Top Header & Cross-Company Selector Bar */}
       <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-secondary text-2xl">group</span>
-            <h1 className="font-headline-lg text-2xl font-bold text-on-surface">
-              Candidate Selection &amp; Review Queue
-            </h1>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-secondary-fixed text-secondary flex items-center justify-center font-bold">
+              <span className="material-symbols-outlined text-2xl">group</span>
+            </div>
+            <div>
+              <h1 className="font-headline-lg text-2xl font-bold text-on-surface">
+                Candidate Selection &amp; Review Pipeline
+              </h1>
+              <p className="font-body-sm text-xs text-on-surface-variant mt-0.5">
+                Multi-company drive management • Single student profile unified evaluation
+              </p>
+            </div>
           </div>
-          <p className="font-body-sm text-xs text-on-surface-variant mt-1">
-            Review candidate credentials, add/nominate new candidate profiles, and approve application stages.
-          </p>
         </div>
 
-        {/* Action Buttons: Add Profile & Drive Selector */}
+        {/* Action: Add Profile Button */}
         <div className="flex flex-wrap items-center gap-2.5">
-          {/* ADD PROFILE BUTTON */}
           <button
             type="button"
             onClick={() => setShowAddProfileModal(true)}
-            className="px-4 py-2 rounded-xl bg-secondary text-white text-xs font-semibold hover:bg-secondary-container transition-all flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-2.5 rounded-xl bg-secondary text-white text-xs font-bold hover:bg-secondary-container transition-all flex items-center gap-2 shadow-sm"
           >
             <span className="material-symbols-outlined text-base">person_add</span>
             <span>+ Add Profile &amp; Approve</span>
           </button>
+        </div>
+      </div>
 
-          {/* Job Dropdown */}
-          <div className="flex items-center gap-2 text-xs bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/40">
-            <span className="font-semibold text-on-surface whitespace-nowrap">Drive:</span>
+      {/* Cross-Company and Drive Filters Bar */}
+      <div className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Company Filter */}
+          <div className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/40">
+            <span className="font-bold text-on-surface-variant uppercase text-[11px] whitespace-nowrap">
+              Company:
+            </span>
+            <select
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              className="bg-transparent font-semibold text-on-surface focus:outline-none max-w-[190px] truncate"
+            >
+              <option value="ALL">All Companies ({jobs.length} Drives)</option>
+              {companies.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.companyName}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Drive / Role Filter */}
+          <div className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/40">
+            <span className="font-bold text-on-surface-variant uppercase text-[11px] whitespace-nowrap">
+              Drive Opening:
+            </span>
             <select
               value={selectedJobId}
               onChange={(e) => setSelectedJobId(e.target.value)}
-              className="bg-transparent font-semibold text-on-surface focus:outline-none max-w-[220px] truncate"
+              className="bg-transparent font-semibold text-on-surface focus:outline-none max-w-[240px] truncate"
             >
-              {jobs.map((j) => (
+              {filteredJobs.map((j) => (
                 <option key={j._id} value={j._id}>
-                  {j.title} ({j.approvalStatus})
+                  {j.title} ({(j.companyId as any)?.companyName || 'Company'})
                 </option>
               ))}
             </select>
           </div>
         </div>
+
+        {/* Search Input */}
+        <div className="relative w-full sm:w-72">
+          <span className="material-symbols-outlined absolute left-3 top-2 text-on-surface-variant text-base">
+            search
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search candidate, roll no, email..."
+            className="w-full pl-9 pr-3 py-2 bg-surface-container-low border border-outline-variant rounded-xl text-xs focus:outline-none focus:border-secondary transition-all"
+          />
+        </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-surface-container-lowest p-4 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 overflow-x-auto p-1 bg-surface-container-low rounded-xl border border-outline-variant/30">
+      {/* Status Filter Tabs */}
+      <div className="bg-surface-container-lowest p-2 rounded-2xl shadow-sm border border-outline-variant/60 flex items-center justify-between text-xs overflow-x-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-surface-container-low rounded-xl border border-outline-variant/30">
           {['ALL', 'APPLIED', 'SHORTLISTED', 'INTERVIEW', 'SELECTED', 'REJECTED'].map((st) => (
             <button
               key={st}
               type="button"
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1 rounded-lg font-semibold transition-all whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg font-bold transition-all whitespace-nowrap ${
                 statusFilter === st
-                  ? 'bg-surface-container-lowest text-on-surface shadow-xs'
+                  ? 'bg-surface-container-lowest text-secondary shadow-xs'
                   : 'text-on-surface-variant hover:text-on-surface'
               }`}
             >
@@ -313,26 +413,17 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
           ))}
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full sm:w-64">
-          <span className="material-symbols-outlined absolute left-2.5 top-2 text-on-surface-variant text-base">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search candidate or roll no..."
-            className="w-full pl-8 pr-3 py-1.5 bg-surface-container-low border border-outline-variant rounded-xl text-xs focus:outline-none focus:border-secondary"
-          />
+        <div className="hidden lg:flex items-center gap-2 px-3 text-on-surface-variant font-medium">
+          <span className="material-symbols-outlined text-base text-secondary">verified</span>
+          <span>Drive: {currentCompanyName} • {currentJob?.title}</span>
         </div>
       </div>
 
-      {/* Batch Actions Bar (when applicants exist) */}
+      {/* Batch Action Controller */}
       {filteredApplicants.length > 0 && (
         <div className="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-on-surface">
+            <span className="font-bold text-on-surface">
               {selectedAppIds.length} of {filteredApplicants.length} Candidates Selected
             </span>
             {selectedAppIds.length > 0 && (
@@ -347,13 +438,13 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <label className="font-semibold text-on-surface">Set Status:</label>
+            <label className="font-semibold text-on-surface">Approve Stage:</label>
             <select
               value={batchStatus}
               onChange={(e) => setBatchStatus(e.target.value as ApplicationStatus)}
-              className="p-1.5 bg-surface-container-lowest border border-outline-variant rounded-lg font-semibold focus:outline-none"
+              className="p-1.5 bg-surface-container-lowest border border-outline-variant rounded-xl font-semibold focus:outline-none"
             >
-              <option value="SHORTLISTED">SHORTLISTED (Round 2)</option>
+              <option value="SHORTLISTED">SHORTLISTED (Assessment)</option>
               <option value="INTERVIEW">INTERVIEW (Technical Panel)</option>
               <option value="SELECTED">SELECTED (Release Offer)</option>
               <option value="REJECTED">REJECTED (Release Candidate)</option>
@@ -363,13 +454,13 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
               type="button"
               disabled={selectedAppIds.length === 0 || updatingBatch}
               onClick={handleBatchUpdate}
-              className={`px-4 py-1.5 rounded-lg font-semibold text-white transition-all shadow-xs flex items-center gap-1 ${
+              className={`px-4 py-1.5 rounded-xl font-bold text-white transition-all shadow-xs flex items-center gap-1 ${
                 selectedAppIds.length > 0 && !updatingBatch
                   ? 'bg-secondary hover:bg-secondary-container'
                   : 'bg-outline-variant cursor-not-allowed'
               }`}
             >
-              {updatingBatch ? 'Updating...' : `Update Selected (${selectedAppIds.length})`}
+              {updatingBatch ? 'Updating...' : `Approve Selected (${selectedAppIds.length})`}
             </button>
           </div>
         </div>
@@ -381,6 +472,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
           <span className="material-symbols-outlined text-3xl animate-spin text-secondary">
             progress_activity
           </span>
+          <p className="text-xs text-on-surface-variant mt-2">Loading candidate queue...</p>
         </div>
       ) : filteredApplicants.length === 0 ? (
         <div className="p-12 text-center bg-surface-container-lowest rounded-2xl border border-outline-variant/50 flex flex-col items-center">
@@ -391,7 +483,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
             No Candidates in this Category
           </h3>
           <p className="text-xs text-on-surface-variant mt-1 max-w-md">
-            Click <strong>"+ Add Profile &amp; Approve"</strong> above to nominate/add a candidate profile directly and approve their application!
+            Click <strong>"+ Add Profile &amp; Approve"</strong> above to select any university student profile and approve their application for this drive!
           </p>
         </div>
       ) : (
@@ -410,7 +502,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                     className="rounded"
                   />
                 </th>
-                <th className="p-3.5">Candidate / Roll No</th>
+                <th className="p-3.5">Candidate / Single Profile</th>
                 <th className="p-3.5">Branch</th>
                 <th className="p-3.5">CGPA</th>
                 <th className="p-3.5">Batch</th>
@@ -423,6 +515,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
               {filteredApplicants.map((item) => {
                 const student = item.student;
                 const isSelectedCheckbox = selectedAppIds.includes(item.applicationId);
+                const isInterview = item.status === 'INTERVIEW';
 
                 return (
                   <tr
@@ -440,11 +533,16 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                       />
                     </td>
                     <td className="p-3.5 font-semibold text-on-surface">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-sm">{student.name}</span>
-                        <span className="font-code-tabular text-[11px] text-on-surface-variant font-normal">
-                          {student.registrationNumber} • {student.email}
-                        </span>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center font-bold text-xs shrink-0">
+                          {student.name.charAt(0)}
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-on-surface">{student.name}</span>
+                          <span className="font-code-tabular text-[11px] text-on-surface-variant font-normal">
+                            {student.registrationNumber} • {student.email}
+                          </span>
+                        </div>
                       </div>
                     </td>
                     <td className="p-3.5 font-medium text-on-surface">{student.branch}</td>
@@ -475,7 +573,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                       </span>
                     </td>
                     <td className="p-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center justify-end gap-1.5 flex-wrap">
                         <button
                           type="button"
                           onClick={() => setActiveCandidate(item)}
@@ -484,7 +582,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                           Dossier
                         </button>
 
-                        {/* Approval Stage Steppers */}
+                        {/* Fast Stage Stepper Buttons */}
                         {item.status === 'APPLIED' && (
                           <button
                             type="button"
@@ -495,11 +593,12 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                                 'Candidate profile shortlisted for Round 2.'
                               )
                             }
-                            className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-semibold text-[11px]"
+                            className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-[11px]"
                           >
                             Approve Shortlist
                           </button>
                         )}
+
                         {item.status === 'SHORTLISTED' && (
                           <button
                             type="button"
@@ -510,25 +609,45 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                                 'Candidate invited to technical interview panel.'
                               )
                             }
-                            className="px-2.5 py-1 rounded-lg bg-secondary text-white hover:bg-secondary-container font-semibold text-[11px]"
+                            className="px-2.5 py-1 rounded-lg bg-secondary text-white hover:bg-secondary-container font-bold text-[11px]"
                           >
                             Approve Interview
                           </button>
                         )}
-                        {item.status === 'INTERVIEW' && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleSingleStatusUpdate(
-                                item.applicationId,
-                                'SELECTED',
-                                'Selected following final interview round. Offer issued.'
-                              )
-                            }
-                            className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-[11px]"
-                          >
-                            Approve Offer
-                          </button>
+
+                        {isInterview && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInterviewPreviewApp({
+                                  ...item,
+                                  _id: item.applicationId,
+                                  jobId: { title: currentJob?.title || 'Drive Role' },
+                                  companyId: { companyName: currentCompanyName },
+                                });
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim font-bold text-[11px] flex items-center gap-1"
+                              title="Enter / Preview Interview Room"
+                            >
+                              <span className="material-symbols-outlined text-xs">videocam</span>
+                              <span>Interview Room</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleSingleStatusUpdate(
+                                  item.applicationId,
+                                  'SELECTED',
+                                  'Selected following final interview round. Offer issued.'
+                                )
+                              }
+                              className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px]"
+                            >
+                              Approve Offer
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -552,7 +671,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                     Add Candidate Profile &amp; Approve Application
                   </h2>
                   <p className="text-[11px] text-on-surface-variant">
-                    Nominate and approve candidates directly for company placement drives
+                    Nominate candidates across company drives using single student profile architecture
                   </p>
                 </div>
               </div>
@@ -565,8 +684,8 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
               </button>
             </div>
 
-            <form onSubmit={handleAddProfileSubmit} className="flex flex-col gap-3">
-              {/* Target Drive selection */}
+            <form onSubmit={handleAddProfileSubmit} className="flex flex-col gap-3.5">
+              {/* Target Drive & Company Selection */}
               <div>
                 <label className="font-bold text-on-surface block mb-1">
                   Target Company Drive *
@@ -585,6 +704,54 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Source Mode Toggle: Existing Student vs New Candidate */}
+              <div className="bg-surface-container-low p-2.5 rounded-xl border border-outline-variant/40 flex flex-col gap-2">
+                <label className="font-bold text-on-surface">Candidate Source:</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setProfileSourceMode('EXISTING')}
+                    className={`py-2 rounded-lg font-bold text-center transition-all ${
+                      profileSourceMode === 'EXISTING'
+                        ? 'bg-secondary text-white shadow-xs'
+                        : 'bg-surface-container-lowest text-on-surface border border-outline-variant/50'
+                    }`}
+                  >
+                    Select Existing Student (Single Profile)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProfileSourceMode('NEW')}
+                    className={`py-2 rounded-lg font-bold text-center transition-all ${
+                      profileSourceMode === 'NEW'
+                        ? 'bg-secondary text-white shadow-xs'
+                        : 'bg-surface-container-lowest text-on-surface border border-outline-variant/50'
+                    }`}
+                  >
+                    Enter New Candidate Details
+                  </button>
+                </div>
+
+                {profileSourceMode === 'EXISTING' && (
+                  <div className="mt-1">
+                    <label className="text-[11px] font-semibold text-on-surface-variant block mb-1">
+                      Choose from Registered University Students:
+                    </label>
+                    <select
+                      value={selectedExistingStudentId}
+                      onChange={(e) => setSelectedExistingStudentId(e.target.value)}
+                      className="w-full p-2 bg-surface-container-lowest border border-outline-variant rounded-lg font-semibold text-on-surface focus:outline-none"
+                    >
+                      {students.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.registrationNumber}) • {s.branch} • CGPA {Number(s.cgpa).toFixed(2)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               {/* Candidate Info Grid */}
@@ -629,7 +796,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                       })
                     }
                     placeholder="2022CSB1090"
-                    className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg font-code-tabular"
+                    className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg font-code-tabular font-bold"
                   />
                 </div>
 
@@ -661,7 +828,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                     onChange={(e) =>
                       setNewCandidateForm({ ...newCandidateForm, cgpa: e.target.value })
                     }
-                    className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg font-code-tabular font-bold"
+                    className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-lg font-code-tabular font-bold text-secondary"
                   />
                 </div>
 
@@ -681,7 +848,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
               </div>
 
               <div>
-                <label className="font-semibold block mb-1">Technical Skills &amp; Keywords</label>
+                <label className="font-semibold block mb-1">Technical Skills</label>
                 <input
                   type="text"
                   value={newCandidateForm.skills}
@@ -696,7 +863,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
               {/* Initial Approval Stage */}
               <div className="bg-surface-container-low p-3 rounded-xl border border-outline-variant/40 flex flex-col gap-2">
                 <label className="font-bold text-on-surface block">
-                  Select Initial Approval Stage:
+                  Select Approval Stage for this Application:
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   <button
@@ -736,7 +903,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                         : 'bg-surface-container-lowest text-on-surface border-outline-variant'
                     }`}
                   >
-                    Selected (Offer)
+                    Select (Offer)
                   </button>
                 </div>
               </div>
@@ -764,7 +931,7 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
                 <button
                   type="submit"
                   disabled={submittingProfile}
-                  className="px-4 py-2 rounded-xl bg-secondary text-white font-semibold hover:bg-secondary-container shadow-xs flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-secondary text-white font-bold hover:bg-secondary-container shadow-xs flex items-center gap-1.5"
                 >
                   <span className="material-symbols-outlined text-base">check_circle</span>
                   <span>
@@ -936,6 +1103,17 @@ export const RecruiterApplicants: React.FC<RecruiterApplicantsProps> = ({ initia
             </div>
           </div>
         </div>
+      )}
+
+      {/* VIRTUAL INTERVIEW ROOM PREVIEW MODAL */}
+      {interviewPreviewApp && (
+        <VirtualInterviewRoom
+          application={interviewPreviewApp}
+          onClose={() => setInterviewPreviewApp(null)}
+          onAttendanceCompleted={() => {
+            fetchApplicants(selectedJobId);
+          }}
+        />
       )}
     </div>
   );

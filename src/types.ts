@@ -113,6 +113,10 @@ export interface ApplicationData {
   offerLetterRef?: string;
   interviewDate?: string;
   interviewFormat?: string;
+  interviewAttended?: boolean;
+  attendedAt?: string;
+  interviewNotes?: string;
+  interviewCodeSubmission?: string;
 }
 
 export interface AuditLogData {

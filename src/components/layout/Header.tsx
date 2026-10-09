@@ -2,7 +2,15 @@ import React from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 
 export const Header: React.FC = () => {
-  const { user, quickSwitchRole, toggleSidebar, setActiveTab, setShowAuthModal, logout } = useAuth();
+  const {
+    user,
+    quickSwitchRole,
+    toggleSidebar,
+    setActiveTab,
+    setShowAuthModal,
+    logout,
+    openRecruiterCompanyModal,
+  } = useAuth();
   const role = user?.role || 'STUDENT';
 
   const defaultAvatar =
@@ -10,12 +18,12 @@ export const Header: React.FC = () => {
 
   const roleLabels: Record<string, { title: string; badge: string; color: string }> = {
     STUDENT: {
-      title: "Candidate Aspirant (CS '26)",
+      title: user?.profile ? `${user.profile.branch} • ${user.profile.cgpa} CGPA` : 'Candidate Aspirant',
       badge: 'Student Portal',
       color: 'bg-blue-50 text-blue-800 border-blue-200',
     },
     RECRUITER: {
-      title: 'Corporate Talent Acquisition',
+      title: user?.company?.companyName || 'Corporate Recruiter',
       badge: 'Recruiter Portal',
       color: 'bg-indigo-50 text-indigo-800 border-indigo-200',
     },
@@ -79,13 +87,13 @@ export const Header: React.FC = () => {
 
         <button
           type="button"
-          onClick={() => quickSwitchRole('RECRUITER')}
+          onClick={() => openRecruiterCompanyModal()}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             role === 'RECRUITER'
               ? 'bg-secondary text-white shadow-sm'
               : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
           }`}
-          title="Switch to Company Recruiter View"
+          title="Choose hiring company / Recruiter access"
         >
           <span className="material-symbols-outlined text-base">domain</span>
           <span className="hidden md:inline">Recruiter</span>
@@ -147,6 +155,28 @@ export const Header: React.FC = () => {
                   {currentRoleInfo.title}
                 </span>
               </div>
+            </button>
+
+            {role === 'RECRUITER' && (
+              <button
+                type="button"
+                onClick={() => openRecruiterCompanyModal()}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-secondary/40 bg-secondary-fixed/40 hover:bg-secondary-fixed text-on-secondary-fixed text-xs font-bold transition-colors"
+                title="Switch hiring company"
+              >
+                <span className="material-symbols-outlined text-sm text-secondary">swap_horiz</span>
+                <span>Switch Company</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={logout}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-outline-variant/60 bg-surface-container-low hover:bg-error-container hover:text-on-error-container text-on-surface-variant text-xs font-semibold transition-colors"
+              title="Change active profile / Return to role selector"
+            >
+              <span className="material-symbols-outlined text-sm">switch_account</span>
+              <span className="hidden xl:inline">Switch Profile</span>
             </button>
           </div>
         ) : (

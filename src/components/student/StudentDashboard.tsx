@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { api } from '../../services/api.ts';
 import { JobData, ApplicationData } from '../../types.ts';
+import { VirtualInterviewRoom } from './VirtualInterviewRoom.tsx';
 
 interface StudentDashboardProps {
   onSelectJob?: (jobId: string) => void;
@@ -17,6 +18,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [summaryData, setSummaryData] = useState<any>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [activeInterviewApp, setActiveInterviewApp] = useState<any | null>(null);
 
   const fetchSummary = async () => {
     try {
@@ -61,10 +63,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   };
 
   const profile = summaryData?.profile || user?.profile;
-  const studentName = user?.name || 'Rohan Sharma';
+  const studentName = user?.name || 'Student Candidate';
   const cgpa = profile?.cgpa || 8.42;
   const branch = profile?.branch || 'CSE';
-  const rollNo = profile?.registrationNumber || '2022CSB1048';
+  const rollNo = profile?.registrationNumber || '2024CSB1001';
   const gradYear = profile?.graduationYear || 2026;
   const readiness = summaryData?.readinessScore || 85;
 
@@ -203,6 +205,46 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* ACTIVE TECHNICAL INTERVIEW CALLOUT BANNER */}
+        {interviewCount > 0 && (
+          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white p-5 rounded-2xl shadow-md flex flex-col md:flex-row md:items-center justify-between gap-4 border border-blue-700/60">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-xs flex items-center justify-center text-white shrink-0 shadow-inner">
+                <span className="material-symbols-outlined text-2xl">video_camera_front</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-base">You are selected for Technical Interview!</span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                    Panel Active
+                  </span>
+                </div>
+                <p className="text-xs text-blue-200 mt-1 leading-relaxed">
+                  Campus recruitment drive for <strong>Google India (SWE Intern)</strong> has scheduled your live assessment. Click below to enter your virtual interview room and complete your evaluation.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const app = summaryData?.recentApplications?.find((a: any) => a.status === 'INTERVIEW') || {
+                  _id: 'app_google_live_67001',
+                  status: 'INTERVIEW',
+                  jobId: { title: 'Software Engineering Intern' },
+                  companyId: { companyName: 'Google India' },
+                  interviewFormat: 'Google Meet Panel & Code Evaluation',
+                };
+                setActiveInterviewApp(app);
+              }}
+              className="px-5 py-2.5 bg-white text-secondary hover:bg-blue-50 font-bold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 shrink-0 self-start md:self-auto"
+            >
+              <span className="material-symbols-outlined text-base">meeting_room</span>
+              <span>Attend Interview (Enter Room)</span>
+            </button>
+          </div>
+        )}
 
         {/* Placement KPI Summary Grid (5 Metrics) */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -712,18 +754,45 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       SWE Intern
                     </span>
                   </div>
-                  <div className="px-2 py-1 rounded bg-surface-container text-secondary font-body-sm text-xs font-semibold flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm">event_available</span>
-                    Interview: Oct 24, 10:00 AM
+                  <div className="px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed font-body-sm text-xs font-semibold flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-sm">event_available</span>
+                      Interview: Oct 24, 10:00 AM
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const app = summaryData?.recentApplications?.find((a: any) => a.status === 'INTERVIEW') || {
+                          _id: 'app_google_live_67001',
+                          status: 'INTERVIEW',
+                          jobId: { title: 'Software Engineering Intern' },
+                          companyId: { companyName: 'Google India' },
+                          interviewFormat: 'Google Meet Panel & Code Evaluation',
+                        };
+                        setActiveInterviewApp(app);
+                      }}
+                      className="px-2 py-0.5 rounded bg-secondary text-white text-[11px] font-bold hover:bg-secondary-container transition-all"
+                    >
+                      Attend
+                    </button>
                   </div>
                   <div className="flex items-center justify-between text-xs text-on-surface-variant mt-0.5">
                     <span>Format: Google Meet (Technical)</span>
                     <button
                       type="button"
-                      onClick={() => setActiveTab('my-applications')}
-                      className="text-secondary hover:underline font-label-compact font-semibold"
+                      onClick={() => {
+                        const app = summaryData?.recentApplications?.find((a: any) => a.status === 'INTERVIEW') || {
+                          _id: 'app_google_live_67001',
+                          status: 'INTERVIEW',
+                          jobId: { title: 'Software Engineering Intern' },
+                          companyId: { companyName: 'Google India' },
+                          interviewFormat: 'Google Meet Panel & Code Evaluation',
+                        };
+                        setActiveInterviewApp(app);
+                      }}
+                      className="text-secondary hover:underline font-label-compact font-bold"
                     >
-                      Prep Kit
+                      Enter Room ➔
                     </button>
                   </div>
                 </div>
@@ -895,6 +964,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Virtual Interview Room Modal */}
+      {activeInterviewApp && (
+        <VirtualInterviewRoom
+          application={activeInterviewApp}
+          onClose={() => setActiveInterviewApp(null)}
+          onAttendanceCompleted={() => {
+            fetchSummary();
+          }}
+        />
+      )}
     </div>
   );
 };

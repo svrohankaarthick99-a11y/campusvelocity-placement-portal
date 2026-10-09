@@ -79,9 +79,9 @@ export const BrowseJobs: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-[1536px] mx-auto px-6 py-6 gap-6">
+    <div className="flex flex-col w-full max-w-[1536px] mx-auto px-4 sm:px-6 py-6 gap-6">
       {/* Title & Filter Header */}
-      <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/50 flex flex-col gap-4">
+      <div className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="font-headline-lg text-2xl font-bold text-on-surface">
@@ -91,7 +91,7 @@ export const BrowseJobs: React.FC = () => {
               Verified corporate recruiting cycles for National Institute of Technology
             </p>
           </div>
-          <span className="font-code-tabular text-xs font-semibold px-2.5 py-1 rounded bg-surface-container text-secondary self-start sm:self-auto">
+          <span className="font-code-tabular text-xs font-bold px-3 py-1 rounded-xl bg-secondary-fixed text-on-secondary-fixed self-start sm:self-auto border border-secondary-fixed-dim">
             {jobs.length} Active Positions
           </span>
         </div>
@@ -107,27 +107,27 @@ export const BrowseJobs: React.FC = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by job role, keywords (e.g. C++, Cloud, ML), or location..."
-              className="w-full pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg text-xs text-on-surface focus:outline-none focus:border-secondary"
+              className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low border border-outline-variant rounded-xl text-xs text-on-surface focus:outline-none focus:border-secondary transition-all"
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-secondary text-white rounded-lg text-xs font-semibold hover:bg-secondary-container transition-colors shrink-0"
+            className="px-5 py-2.5 bg-secondary text-white rounded-xl text-xs font-bold hover:bg-secondary-container transition-all shrink-0 shadow-sm"
           >
             Search
           </button>
         </form>
 
         {/* Filter controls */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-2 border-t border-outline-variant/30 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 pt-3 border-t border-outline-variant/30 text-xs">
           <div>
-            <label className="font-label-compact text-on-surface-variant block mb-1">
+            <label className="font-label-compact text-on-surface-variant block mb-1 font-semibold">
               Department
             </label>
             <select
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded text-on-surface focus:outline-none"
+              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-medium focus:outline-none focus:border-secondary"
             >
               <option value="All">All Departments</option>
               <option value="CSE">Computer Science (CSE)</option>
@@ -140,11 +140,13 @@ export const BrowseJobs: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-label-compact text-on-surface-variant block mb-1">Job Type</label>
+            <label className="font-label-compact text-on-surface-variant block mb-1 font-semibold">
+              Job Type
+            </label>
             <select
               value={jobType}
               onChange={(e) => setJobType(e.target.value)}
-              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded text-on-surface focus:outline-none"
+              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-medium focus:outline-none focus:border-secondary"
             >
               <option value="All">All Types</option>
               <option value="Full Time">Full Time (FTE)</option>
@@ -153,13 +155,13 @@ export const BrowseJobs: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-label-compact text-on-surface-variant block mb-1">
+            <label className="font-label-compact text-on-surface-variant block mb-1 font-semibold">
               Batch (Grad Year)
             </label>
             <select
               value={gradYear}
               onChange={(e) => setGradYear(e.target.value)}
-              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded text-on-surface focus:outline-none"
+              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-medium focus:outline-none focus:border-secondary"
             >
               <option value="All">All Batches</option>
               <option value="2026">Batch 2026</option>
@@ -168,13 +170,13 @@ export const BrowseJobs: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-label-compact text-on-surface-variant block mb-1">
-              Max Min-CGPA
+            <label className="font-label-compact text-on-surface-variant block mb-1 font-semibold">
+              Max Cutoff
             </label>
             <select
               value={minCGPA}
               onChange={(e) => setMinCGPA(e.target.value)}
-              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded text-on-surface focus:outline-none"
+              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-medium focus:outline-none focus:border-secondary"
             >
               <option value="">Any CGPA Cutoff</option>
               <option value="8.5">≤ 8.50 CGPA</option>
@@ -185,11 +187,13 @@ export const BrowseJobs: React.FC = () => {
           </div>
 
           <div>
-            <label className="font-label-compact text-on-surface-variant block mb-1">Sort By</label>
+            <label className="font-label-compact text-on-surface-variant block mb-1 font-semibold">
+              Sort By
+            </label>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded text-on-surface focus:outline-none"
+              className="w-full p-2 bg-surface-container-low border border-outline-variant rounded-xl text-on-surface font-medium focus:outline-none focus:border-secondary"
             >
               <option value="newest">Recently Posted</option>
               <option value="deadline">Closest Deadline</option>
@@ -232,20 +236,20 @@ export const BrowseJobs: React.FC = () => {
             return (
               <div
                 key={job._id}
-                className="bg-surface-container-lowest p-5 rounded-xl shadow-sm border border-outline-variant/50 flex flex-col justify-between hover:shadow-md transition-shadow gap-4"
+                className="bg-surface-container-lowest p-5 rounded-2xl shadow-sm border border-outline-variant/60 flex flex-col justify-between hover:shadow-md transition-shadow gap-4"
               >
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center font-bold text-secondary text-base">
+                    <div className="w-10 h-10 rounded-xl bg-secondary-fixed text-secondary flex items-center justify-center font-bold text-base">
                       {companyName.charAt(0)}
                     </div>
-                    <span className="font-label-compact text-[11px] font-semibold text-secondary uppercase bg-surface-container-low px-2 py-0.5 rounded">
+                    <span className="font-label-compact text-[11px] font-bold text-secondary uppercase bg-surface-container px-2 py-0.5 rounded-lg border border-outline-variant/40">
                       {job.tier}
                     </span>
                   </div>
 
                   <div>
-                    <span className="font-label-compact text-xs text-on-surface-variant font-medium">
+                    <span className="font-label-compact text-xs text-on-surface-variant font-semibold">
                       {companyName}
                     </span>
                     <h3 className="font-headline-sm text-base font-bold text-on-surface line-clamp-1 mt-0.5">
@@ -259,17 +263,17 @@ export const BrowseJobs: React.FC = () => {
                       {job.location}
                     </span>
                     <span>•</span>
-                    <span className="font-code-tabular font-semibold text-on-surface">
+                    <span className="font-code-tabular font-bold text-secondary">
                       {job.stipendOrCTC}
                     </span>
                   </div>
 
-                  <p className="font-body-sm text-xs text-on-surface-variant line-clamp-2 mt-1">
+                  <p className="font-body-sm text-xs text-on-surface-variant line-clamp-2 leading-relaxed">
                     {job.description}
                   </p>
 
                   {/* Requirements summary */}
-                  <div className="bg-surface-container-low p-2 rounded text-xs flex flex-col gap-1 border border-outline-variant/30">
+                  <div className="bg-surface-container-low p-2.5 rounded-xl text-xs flex flex-col gap-1 border border-outline-variant/30">
                     <div className="flex justify-between">
                       <span className="text-on-surface-variant">Cutoff CGPA:</span>
                       <span className="font-code-tabular font-bold text-on-surface">
@@ -312,11 +316,11 @@ export const BrowseJobs: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-outline-variant/30">
+                <div className="flex items-center justify-between pt-3 border-t border-outline-variant/30">
                   <button
                     type="button"
                     onClick={() => setSelectedJob(job)}
-                    className="px-3 py-1.5 rounded bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold"
+                    className="px-3 py-1.5 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high text-xs font-semibold transition-colors"
                   >
                     Details &amp; JD
                   </button>
@@ -325,7 +329,7 @@ export const BrowseJobs: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setActiveTab('my-applications')}
-                      className="px-3 py-1.5 rounded bg-surface-container text-secondary text-xs font-semibold"
+                      className="px-3.5 py-1.5 rounded-lg bg-surface-container text-secondary text-xs font-bold"
                     >
                       Track Application
                     </button>
@@ -334,9 +338,9 @@ export const BrowseJobs: React.FC = () => {
                       type="button"
                       disabled={!isEligible || applyingJobId === job._id}
                       onClick={() => handleApply(job)}
-                      className={`px-3 py-1.5 rounded text-xs font-semibold flex items-center gap-1 transition-colors ${
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-all ${
                         isEligible
-                          ? 'bg-secondary text-white hover:bg-secondary-container'
+                          ? 'bg-secondary text-white hover:bg-secondary-container shadow-xs'
                           : 'bg-outline-variant text-on-surface-variant/50 cursor-not-allowed'
                       }`}
                     >

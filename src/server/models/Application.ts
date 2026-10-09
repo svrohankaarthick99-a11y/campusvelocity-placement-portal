@@ -26,6 +26,10 @@ export interface IApplication extends Document {
   offerLetterRef?: string;
   interviewDate?: Date;
   interviewFormat?: string;
+  interviewAttended?: boolean;
+  attendedAt?: Date;
+  interviewNotes?: string;
+  interviewCodeSubmission?: string;
 }
 
 const statusHistorySchema = new Schema<IStatusHistoryItem>(
@@ -92,6 +96,21 @@ const applicationSchema = new Schema<IApplication>(
     interviewFormat: {
       type: String,
       default: 'Online Technical Round',
+    },
+    interviewAttended: {
+      type: Boolean,
+      default: false,
+    },
+    attendedAt: {
+      type: Date,
+    },
+    interviewNotes: {
+      type: String,
+      default: '',
+    },
+    interviewCodeSubmission: {
+      type: String,
+      default: '',
     },
   },
   {
